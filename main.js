@@ -87,7 +87,7 @@ ipcMain.handle('merge-pdfs', async (event, { folderPath, sourceFile }) => {
       });
 
       const mergedPdfBytes = await targetPdfDoc.save(); // Guardar el PDF fusionado
-      const mergedFilePath = path.join(folderPath, `merged_${file}`); // Ruta del nuevo archivo fusionado
+      const mergedFilePath = path.join(folderPath, `cert_${file}`); // Ruta del nuevo archivo fusionado
       fs.writeFileSync(mergedFilePath, mergedPdfBytes); // Escribir el archivo PDF fusionado
       mergedFiles.push(mergedFilePath);
       // console.log(`18. Archivo fusionado guardado: ${mergedFilePath}`); // Log para archivo fusionado guardado
