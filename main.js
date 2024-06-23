@@ -13,7 +13,8 @@ const { PDFDocument } = require('pdf-lib'); // Importar PDFDocument de pdf-lib
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 800,  // Ancho de la ventana
-    height: 600, // Alto de la ventana
+    height: 650, // Alto de la ventana
+    icon: path.join(__dirname, 'assets', 'cjf.ico'), // Ruta al icono
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'), // Preload script
       contextIsolation: true, // Aislar el contexto
