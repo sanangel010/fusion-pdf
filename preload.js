@@ -8,5 +8,5 @@ const { ipcRenderer, contextBridge } = require('electron');
 // Exponer funciones de ipcRenderer en el contexto del navegador
 contextBridge.exposeInMainWorld('electron', {
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
-  mergePdfs: (folderPath, sourceFile) => ipcRenderer.invoke('merge-pdfs', { folderPath, sourceFile })
+  executeOperation: (folderPath, sourceFile, operation) => ipcRenderer.invoke('execute-operation', { folderPath, sourceFile, operation })
 });

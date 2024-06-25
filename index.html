@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,15 +8,70 @@
     <link rel="stylesheet" href="style.css">
     <title>Escuela Federal de Formación Judicial</title>
     <style>
+        /* Estilos para los interruptores */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
 
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #007bff;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Posición de los labels */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .switch-label {
+            margin-right: 10px;
+        }
     </style>
 </head>
-
 <body>
     <div class="container mt-5">
         <h1 class="mb-4 text-center">Fusionar PDFs</h1>
 
-        <!-- Step 1 -->
+        <!-- Paso 1 -->
         <div class="step">
             <div class="step-number">1</div>
             <div class="step-title">Selecciona la carpeta que contiene los PDFs a certificar</div>
@@ -27,7 +81,7 @@
             <div id="selected-directory" class="mt-2"></div>
         </div>
 
-        <!-- Step 2 -->
+        <!-- Paso 2 -->
         <div class="step">
             <div class="step-number">2</div>
             <div class="step-title">Selecciona el archivo PDF de origen con la leyenda de certificación</div>
@@ -36,12 +90,32 @@
             <input type="file" id="source-file" accept="application/pdf" class="form-control">
         </div>
 
-        <!-- Step 3 -->
+        <!-- Paso 3: Elegir la operación -->
         <div class="step">
             <div class="step-number">3</div>
-            <div class="step-title">Fusionar los PDFs seleccionados</div>
+            <div class="step-title">Selecciona la operación a realizar</div>
         </div>
-        <button id="merge-button" class="btn btn-success">Fusionar PDFs</button>
+        <div class="form-group switch-container">
+            <label class="switch-label" for="merge">Fusionar PDFs</label>
+            <label class="switch">
+                <input type="radio" name="operation" id="merge" value="merge" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="form-group switch-container">
+            <label class="switch-label" for="append">Agregar una hoja al final</label>
+            <label class="switch">
+                <input type="radio" name="operation" id="append" value="append">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <!-- Paso 4 -->
+        <div class="step">
+            <div class="step-number">4</div>
+            <div class="step-title">Realizar la operación seleccionada</div>
+        </div>
+        <button id="execute-button" class="btn btn-success">Ejecutar</button>
 
         <!-- Status message -->
         <div id="status-message" class="mt-3"></div>
@@ -49,13 +123,28 @@
 
     <script src="renderer.js"></script>
     <script>
-        document.getElementById('merge-button').addEventListener('click', function () {
+        document.getElementById('execute-button').addEventListener('click', function () {
             const statusMessage = document.getElementById('status-message');
             statusMessage.style.display = 'block';
             statusMessage.classList.add('success');
             statusMessage.innerText = 'Los PDFs se han fusionado exitosamente.';
         });
+
+        // Limpiar el mensaje de estado cuando se vuelve a seleccionar una opción en los pasos 1, 2 o 3
+        document.getElementById('select-directory').addEventListener('click', function () {
+            document.getElementById('status-message').innerText = '';
+        });
+
+        document.getElementById('source-file').addEventListener('change', function () {
+            document.getElementById('status-message').innerText = '';
+        });
+
+        const radioButtons = document.querySelectorAll('input[name="operation"]');
+        radioButtons.forEach(radio => {
+            radio.addEventListener('change', function () {
+                document.getElementById('status-message').innerText = '';
+            });
+        });
     </script>
 </body>
-
 </html>

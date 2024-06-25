@@ -12,14 +12,14 @@ const { PDFDocument } = require('pdf-lib'); // Importar PDFDocument de pdf-lib
 // Función para crear la ventana principal
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 800,  // Ancho de la ventana
-    height: 650, // Alto de la ventana
+    width: 750,  // Ancho de la ventana
+    height: 900, // Alto de la ventana
     icon: path.join(__dirname, 'assets', 'cjf.ico'), // Ruta al icono
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'), // Preload script
       contextIsolation: true, // Aislar el contexto
       enableRemoteModule: false, // Deshabilitar módulo remoto
-      nodeIntegration: false // Deshabilitar integración de Node.js, por razones de seguridad al usar electronjs.
+      nodeIntegration: false // Deshabilitar integración de Node.js
     }
   });
 
@@ -49,55 +49,65 @@ ipcMain.handle('select-directory', async (event) => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory']
   });
-  // console.log('9. Directorio seleccionado:', result.filePaths[0]); // Log para el directorio seleccionado
   return result.filePaths[0]; // Devuelve la ruta del directorio seleccionado
 });
 
-// Manejo de fusión de PDFs desde el frontend
-ipcMain.handle('merge-pdfs', async (event, { folderPath, sourceFile }) => {
+// Manejo de operaciones desde el frontend
+ipcMain.handle('execute-operation', async (event, { folderPath, sourceFile, operation }) => {
   try {
-    // console.log('10. Inicio de fusión de PDFs'); // Log para inicio de fusión
-
     const sourcePdfBytes = fs.readFileSync(sourceFile); // Leer el archivo PDF de origen
-    // console.log('11. Archivo PDF de origen leído'); // Log para archivo leído
-
     const sourcePdfDoc = await PDFDocument.load(sourcePdfBytes); // Cargar el archivo PDF de origen
-    // console.log('12. Archivo PDF de origen cargado'); // Log para archivo cargado
-
     const [sourcePage] = await sourcePdfDoc.copyPages(sourcePdfDoc, [0]); // Copiar la primera página del PDF de origen
-    // console.log('13. Página del PDF de origen copiada'); // Log para página copiada
 
     // Listar archivos PDF en la carpeta
     const files = fs.readdirSync(folderPath).filter(file => file.endsWith('.pdf'));
-    // console.log('14. Archivos en la carpeta leídos', files); // Log para archivos listados
 
-    const mergedFiles = [];
+    const startTime = Date.now(); // Tiempo de inicio
 
-    for (const file of files) {
-      // console.log(`15. Procesando archivo: ${file}`); // Log para archivo en proceso
-      const filePath = path.join(folderPath, file); // Ruta completa del archivo
-      // console.log(`16. Ruta completa del archivo: ${filePath}`); // Log para la ruta completa del archivo
-      const targetPdfBytes = fs.readFileSync(filePath); // Leer el archivo PDF de destino
-      const targetPdfDoc = await PDFDocument.load(targetPdfBytes); // Cargar el archivo PDF de destino
-      // console.log('17. Archivo PDF de destino cargado'); // Log para archivo PDF de destino cargado
+    let processedFiles = [];
+    if (operation === 'merge') {
+      const mergedFiles = [];
+      for (const file of files) {
+        const filePath = path.join(folderPath, file); // Ruta completa del archivo
+        const targetPdfBytes = fs.readFileSync(filePath); // Leer el archivo PDF de destino
+        const targetPdfDoc = await PDFDocument.load(targetPdfBytes); // Cargar el archivo PDF de destino
 
-      const embeddedPage = await targetPdfDoc.embedPage(sourcePage); // Incrustar la página de origen en el PDF de destino
-      const pages = targetPdfDoc.getPages(); // Obtener las páginas del PDF de destino
-      pages.forEach((page) => {
-        page.drawPage(embeddedPage); // Dibujar la página de origen incrustada en cada página del PDF de destino
-      });
+        const embeddedPage = await targetPdfDoc.embedPage(sourcePage); // Incrustar la página de origen en el PDF de destino
+        const pages = targetPdfDoc.getPages(); // Obtener las páginas del PDF de destino
+        pages.forEach((page) => {
+          page.drawPage(embeddedPage); // Dibujar la página de origen incrustada en cada página del PDF de destino
+        });
 
-      const mergedPdfBytes = await targetPdfDoc.save(); // Guardar el PDF fusionado
-      const mergedFilePath = path.join(folderPath, `cert_${file}`); // Ruta del nuevo archivo fusionado
-      fs.writeFileSync(mergedFilePath, mergedPdfBytes); // Escribir el archivo PDF fusionado
-      mergedFiles.push(mergedFilePath);
-      // console.log(`18. Archivo fusionado guardado: ${mergedFilePath}`); // Log para archivo fusionado guardado
+        const mergedPdfBytes = await targetPdfDoc.save(); // Guardar el PDF fusionado
+        const mergedFilePath = path.join(folderPath, `cert_${file}`); // Ruta del nuevo archivo fusionado
+        fs.writeFileSync(mergedFilePath, mergedPdfBytes); // Escribir el archivo PDF fusionado
+        mergedFiles.push(mergedFilePath);
+        processedFiles.push(`cert_${file}`);
+      }
+    } else if (operation === 'append') {
+      const appendedFiles = [];
+      for (const file of files) {
+        const filePath = path.join(folderPath, file); // Ruta completa del archivo
+        const targetPdfBytes = fs.readFileSync(filePath); // Leer el archivo PDF de destino
+        const targetPdfDoc = await PDFDocument.load(targetPdfBytes); // Cargar el archivo PDF de destino
+
+        const [appendedPage] = await targetPdfDoc.copyPages(sourcePdfDoc, [0]); // Copiar la primera página del PDF de origen
+        targetPdfDoc.addPage(appendedPage); // Agregar la página de origen al final del PDF de destino
+
+        const appendedPdfBytes = await targetPdfDoc.save(); // Guardar el PDF modificado
+        const appendedFilePath = path.join(folderPath, `cert_${file}`); // Ruta del nuevo archivo modificado
+        fs.writeFileSync(appendedFilePath, appendedPdfBytes); // Escribir el archivo PDF modificado
+        appendedFiles.push(appendedFilePath);
+        processedFiles.push(`cert_${file}`);
+      }
     }
 
-    // console.log('19. Todos los archivos procesados'); // Log para todos los archivos procesados
-    return folderPath;
+    const endTime = Date.now(); // Tiempo de finalización
+    const timeTaken = ((endTime - startTime) / 1000).toFixed(2); // Calcular el tiempo de ejecución en segundos
+
+    return { folderPath, processedFiles, timeTaken };
   } catch (error) {
-    console.error('Error durante la fusión de PDFs:', error); // Log para errores
+    console.error('Error durante la operación de PDFs:', error); // Log para errores
     return null;
   }
 });

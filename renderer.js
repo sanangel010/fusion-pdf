@@ -3,46 +3,38 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   const selectDirectoryButton = document.getElementById('select-directory'); // Botón para seleccionar el directorio
-  const mergeButton = document.getElementById('merge-button');  // Botón para iniciar la fusión
+  const executeButton = document.getElementById('execute-button');  // Botón para iniciar la operación
   const sourceInput = document.getElementById('source-file');   // Input para el archivo PDF de origen
   const statusMessage = document.getElementById('status-message'); // Elemento para mostrar mensajes de estado
   const selectedDirectory = document.getElementById('selected-directory'); // Elemento para mostrar la carpeta seleccionada
+  const mergeRadio = document.getElementById('merge'); // Opción para fusionar PDFs
+  const appendRadio = document.getElementById('append'); // Opción para agregar una hoja al final
 
   let folderPath = ''; // Variable para almacenar la ruta de la carpeta seleccionada
 
   selectDirectoryButton.addEventListener('click', async () => {
-    //console.log('1. Botón de selección de directorio clicado'); // Log para el clic del botón de selección de directorio
     folderPath = await window.electron.selectDirectory(); // Abrir el diálogo de selección de directorio
-    //console.log('2. Carpeta seleccionada:', folderPath); // Log de la carpeta seleccionada
     selectedDirectory.textContent = `Carpeta seleccionada: ${folderPath}`; // Mostrar la carpeta seleccionada en la interfaz
   });
 
-  mergeButton.addEventListener('click', async () => {
-    //console.log('3. Botón de fusión presionado'); // Log para el clic del botón de fusión
-
+  executeButton.addEventListener('click', async () => {
     if (!folderPath || sourceInput.files.length === 0) {
       statusMessage.textContent = 'Por favor, selecciona una carpeta y un archivo PDF.';
-      //console.log('4. Faltan archivos para la fusión'); // Log si faltan archivos
       return;
     }
 
     statusMessage.textContent = 'Procesando...';
-    //console.log('5. Iniciando el procesamiento'); // Log para el inicio del procesamiento
 
     const sourceFile = sourceInput.files[0].path;
-    //console.log('6. Archivo PDF de origen seleccionado:', sourceFile); // Log del archivo PDF de origen seleccionado
+    const operation = mergeRadio.checked ? 'merge' : 'append';
 
-    const startTime = performance.now();
-    const resultPath = await window.electron.mergePdfs(folderPath, sourceFile);
-    const endTime = performance.now();
+    const result = await window.electron.executeOperation(folderPath, sourceFile, operation);
     
-    const timeTaken = ((endTime - startTime) / 1000).toFixed(2);
-    if (resultPath) {
-      statusMessage.textContent = `PDFs fusionados guardados en: ${resultPath} en ${timeTaken} segundos.`;
-      //console.log('7. Fusión completada'); // Log para la fusión completada
+    if (result) {
+      const { folderPath, processedFiles, timeTaken } = result;
+      statusMessage.textContent = `Operación completada en ${timeTaken} segundos. Archivos procesados:\n${processedFiles.join('\n')}`;
     } else {
-      statusMessage.textContent = 'Error al fusionar los PDFs.';
-      //console.log('8. Error al fusionar los PDFs'); // Log para el error de fusión
+      statusMessage.textContent = 'Error durante la operación.';
     }
   });
 });
